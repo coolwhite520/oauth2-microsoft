@@ -8,8 +8,11 @@ import (
 	"oauth2-microsoft/api"
 	"oauth2-microsoft/database"
 	"oauth2-microsoft/model"
+	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/kataras/iris/v12"
+	"github.com/kataras/iris/v12/middleware/basicauth"
 )
 
 func StartIntServer(config model.Config) {
@@ -21,45 +24,36 @@ func StartIntServer(config model.Config) {
 
 	log.Printf("Starting Internal Server on 127.0.0.1:%d \n", config.Server.InternalPort)
 
-	route := mux.NewRouter()
+	app := iris.New()
+	authConfig := basicauth.Config{
+		Users:   map[string]string{"test0": "000000", "test1": "111111"},
+		Realm:   "Authorization Required", // 默认表示域 "Authorization Required"
+		Expires: time.Duration(60 * 24 * 7) * time.Minute,
+	}
+	authentication := basicauth.New(authConfig)
+	app.Use(authentication)
 
-	route.HandleFunc("/", GetUsers).Methods("GET")
-	route.HandleFunc(model.IntAbout, GetAbout).Methods("GET")
+	app.HandleDir("/assets/", "assets/")
+	app.HandleDir("/download/", "downloads/")
 
+	app.Get("/", GetUsers)
+	app.Get(model.IntAbout, GetAbout)
 	// Routes for Users
-	route.HandleFunc(model.IntGetAll, GetUsers).Methods("GET")
-
+	app.Get(model.IntGetAll, GetUsers)
 	// Route for files
-	route.HandleFunc(model.IntUserFiles, GetUserFiles).Methods("GET")
-	route.PathPrefix("/download/").Handler(http.StripPrefix("/download/", http.FileServer(http.Dir("downloads/"))))
+	app.Get(model.IntUserFiles, GetUserFiles)
 
 	// Route for Live Interaction
-	route.HandleFunc(model.IntLiveMain, GetLiveMain).Methods("GET")
-	route.HandleFunc(model.IntLiveSearchMail, GetLiveEmails).Methods("GET")
-	route.HandleFunc(model.IntLiveSendMail, SendEmail).Methods("POST")
-	route.HandleFunc(model.IntLiveOpenMail, GetEmail).Methods("GET")
-	route.HandleFunc(model.IntLiveSearchFiles, GetLiveFiles).Methods("GET")
-	route.HandleFunc(model.IntLiveDownloadFile, DownloadFileHandler).Methods("GET")
-	route.HandleFunc(model.IntLiveReplaceFile, ReplaceFile).Methods("POST")
+	app.Get(model.IntLiveMain, GetLiveMain)
+	app.Get(model.IntLiveSearchMail, GetLiveEmails)
+	app.Post(model.IntLiveSendMail, SendEmail)
+	app.Get(model.IntLiveOpenMail, GetEmail)
+	app.Get(model.IntLiveSearchFiles, GetLiveFiles)
+	app.Get(model.IntLiveDownloadFile, DownloadFileHandler)
+	app.Post(model.IntLiveReplaceFile, ReplaceFile)
 
-	//Route for emails
-	//	route.HandleFunc(model.IntUserEmails, GetUserEmails).Methods("GET")
-	//	route.HandleFunc(model.IntUserEmails, SearchUserEmails).Methods("POST") //  For searching
-	//	route.HandleFunc(model.IntAllEmails, GetAllEmails).Methods("GET")
-	//	route.HandleFunc(model.IntAllEmails, SearchEmails).Methods("POST") // For Searching
-	// Removed this as we are going to use the Live thing.
-	//route.HandleFunc(model.IntUserEmail, GetEmail).Methods("GET")
 
-	// The route for the file downloads.
-
-	route.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/", http.FileServer(http.Dir("assets/"))))
-
-	server := &http.Server{
-		Addr:    fmt.Sprintf("%s:%d", config.Server.Host, config.Server.InternalPort),
-		Handler: route,
-	}
-	server.ListenAndServe()
-
+	app.Run(iris.Addr(fmt.Sprintf("%s:%d", config.Server.Host, config.Server.InternalPort)))
 }
 
 func StartExtServer(config model.Config) {

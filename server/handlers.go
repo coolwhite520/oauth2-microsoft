@@ -3,6 +3,7 @@ package server
 import (
 	b64 "encoding/base64"
 	"fmt"
+	"github.com/kataras/iris/v12/context"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -12,8 +13,6 @@ import (
 	"oauth2-microsoft/model"
 	"os"
 	"path/filepath"
-
-	"github.com/gorilla/mux"
 )
 
 // This will contain the template functions
@@ -41,68 +40,23 @@ func ExecuteSingleTemplate(w http.ResponseWriter, page model.Page, templatePath 
 
 }
 
-func GetUsers(w http.ResponseWriter, r *http.Request) {
+func GetUsers(ctx context.Context) {
 	Page := model.Page{}
 	Page.Title = "Users"
 	Page.URL = api.GenerateURL()
 	Page.UserList = database.GetUsers()
-	ExecuteTemplate(w, Page, "templates/users.html")
+	ExecuteTemplate(ctx.ResponseWriter(), Page, "templates/users.html")
 }
 
-func GetUserEmails(w http.ResponseWriter, r *http.Request) {
-	Page := model.Page{}
-	Page.Title = "Emails"
-
-	vars := mux.Vars(r)
-	id := vars["id"]
-
-	Page.Email = id
-	Page.EmailList = database.GetEmailsByUser(id)
-	ExecuteTemplate(w, Page, "templates/emails.html")
-}
-
-func GetAllEmails(w http.ResponseWriter, r *http.Request) {
-	Page := model.Page{}
-	Page.Title = "Emails"
-	Page.Email = "all"
-	Page.EmailList = database.GetAllEmails()
-	ExecuteTemplate(w, Page, "templates/emails.html")
-}
-
-func SearchUserEmails(w http.ResponseWriter, r *http.Request) {
-	Page := model.Page{}
-	Page.Title = "Emails"
-	vars := mux.Vars(r)
-	user := vars["id"]
-	searchKey := r.FormValue("search")
-	Page.EmailList = database.SearchUserEmails(user, searchKey)
-
-	Page.Email = user
-	ExecuteTemplate(w, Page, "templates/emails.html")
-}
-
-func SearchEmails(w http.ResponseWriter, r *http.Request) {
-	Page := model.Page{}
-
-	searchKey := r.FormValue("search")
-	Page.Title = "Search result for " + searchKey
-
-	Page.EmailList = database.SearchEmails(searchKey)
-	ExecuteTemplate(w, Page, "templates/emails.html")
-}
-
-func GetUserFiles(w http.ResponseWriter, r *http.Request) {
+func GetUserFiles(ctx context.Context) {
 	Page := model.Page{}
 	Page.Title = "Files"
-
-	vars := mux.Vars(r)
-	email := vars["email"]
-
+	email := ctx.Params().Get("email")
 	folderDir := fmt.Sprintf("./downloads/%s", email)
 	if _, err := os.Stat(folderDir); err != nil {
 		if os.IsNotExist(err) {
 			// Create the folder
-			w.Write([]byte("No files exist for this user"))
+			ctx.ResponseWriter().Write([]byte("No files exist for this user"))
 			return
 		} else {
 			log.Println(err)
@@ -117,7 +71,7 @@ func GetUserFiles(w http.ResponseWriter, r *http.Request) {
 		return nil
 	})
 	if err != nil {
-		w.Write([]byte("No files exist for this user"))
+		ctx.ResponseWriter().Write([]byte("No files exist for this user"))
 
 		log.Println(err)
 		return
@@ -125,70 +79,61 @@ func GetUserFiles(w http.ResponseWriter, r *http.Request) {
 
 	Page.Email = email
 	Page.FileList = files
-	ExecuteSingleTemplate(w, Page, "templates/files.html")
-	//ExecuteTemplate(w,Page,"templates/files.html")
+	ExecuteSingleTemplate(ctx.ResponseWriter(), Page, "templates/files.html")
 }
 
-func GetUserFile() {}
-
-func GetAbout(w http.ResponseWriter, r *http.Request) {
+func GetAbout(ctx context.Context) {
 	Page := model.Page{}
 	Page.Title = "About"
-	ExecuteTemplate(w, Page, "templates/about.html")
+	ExecuteTemplate(ctx.ResponseWriter(), Page, "templates/about.html")
 }
 
-func GetEmail(w http.ResponseWriter, r *http.Request) {
+func GetEmail(ctx context.Context) {
 	var Page model.Page
-	vars := mux.Vars(r)
-	emailID := vars["email_id"]
-	userMail := vars["id"]
+	emailID := ctx.Params().Get("email_id")
+	userMail := ctx.Params().Get("id")
 	user := database.GetUser(userMail)
 	Page.Mail = api.GetEmailById(user, emailID) //database.GetEmail(email)
-	ExecuteSingleTemplate(w, Page, "templates/email.html")
+	ExecuteSingleTemplate(ctx.ResponseWriter(), Page, "templates/email.html")
 }
 
 //GetLiveMain will give the template
-func GetLiveMain(w http.ResponseWriter, r *http.Request) {
+func GetLiveMain(ctx context.Context) {
 	Page := model.Page{}
 	Page.Title = "Live Interaction"
-
-	vars := mux.Vars(r)
-	Page.User = database.GetUser(vars["id"])
-
-	// Implement a better way for the refreshing
+	id := ctx.Params().Get("id")
+	Page.User = database.GetUser(id)
 	api.RefreshAccessToken(&Page.User)
-
-	ExecuteTemplate(w, Page, "templates/live.html")
+	ExecuteTemplate(ctx.ResponseWriter(), Page, "templates/live.html")
 }
 
 //GetLiveEmails will give the template
-func GetLiveEmails(w http.ResponseWriter, r *http.Request) {
+func GetLiveEmails(ctx context.Context) {
+
 	Page := model.Page{}
-	vars := mux.Vars(r)
-	keyword := r.URL.Query().Get("keyword")
+	keyword := ctx.URLParam("keyword")
+	id := ctx.Params().Get("id")
 	// If keywords is empty it will search with the default keywords
 	if keyword == "" {
-		Page.User = database.GetUser(vars["id"])
+		Page.User = database.GetUser(id)
 		Page.Title = "Show All E-mails"
 		Page.EmailList = api.GetAllEmails(Page.User, true)
 	} else {
-
-		Page.User = database.GetUser(vars["id"])
+		Page.User = database.GetUser(id)
 		Page.Title = fmt.Sprintf("Search result for : %s", keyword)
 		Page.EmailList = api.GetKeywordEmails(Page.User, keyword, false)
 	}
-	ExecuteTemplate(w, Page, "templates/emails.html")
+	ExecuteTemplate(ctx.ResponseWriter(), Page, "templates/emails.html")
 }
 
 //SendEmail will send an email to a specific address.
-func SendEmail(w http.ResponseWriter, r *http.Request) {
+func SendEmail(ctx context.Context) {
 	Page := model.Page{}
-	vars := mux.Vars(r)
+	id := ctx.Params().Get("id")
 
-	Page.User = database.GetUser(vars["id"])
-	//r.ParseForm()
+	Page.User = database.GetUser(id)
 
-	if err := r.ParseMultipartForm(5 * 1024); err != nil {
+	if err := ctx.Request().ParseMultipartForm(5 * 1024); err != nil {
 		fmt.Printf("Could not parse multipart form: %v\n", err)
 
 		return
@@ -198,19 +143,19 @@ func SendEmail(w http.ResponseWriter, r *http.Request) {
 
 	email := model.SendEmailStruct{}
 
-	email.Message.Subject = r.FormValue("subject")
-	email.Message.Body.ContentType = r.FormValue("contentType")
-	email.Message.Body.Content = r.FormValue("message")
+	email.Message.Subject = ctx.Request().FormValue("subject")
+	email.Message.Body.ContentType = ctx.Request().FormValue("contentType")
+	email.Message.Body.Content =ctx.Request().FormValue("message")
 
 	// This code needs fixing .
-	emailAddress := model.EmailAddress{Address: r.FormValue("emailtarget")}
+	emailAddress := model.EmailAddress{Address: ctx.Request().FormValue("emailtarget")}
 	target := model.ToRecipients{EmailAddress: emailAddress}
 	recp := []model.ToRecipients{target}
 	email.Message.ToRecipients = recp
 	email.SaveToSentItems = "false"
 
 	// Parse the File
-	file, fileHandler, err := r.FormFile("attachment")
+	file, fileHandler, err := ctx.Request().FormFile("attachment")
 	if err == nil {
 
 		attachment := model.Attachment{}
@@ -237,17 +182,15 @@ func SendEmail(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println(resp)
 
-	ExecuteTemplate(w, Page, "templates/message.html")
+	ExecuteTemplate(ctx.ResponseWriter(), Page, "templates/message.html")
 }
 
 //GetLiveEmails will give the template
-func GetLiveFiles(w http.ResponseWriter, r *http.Request) {
-
+func GetLiveFiles(ctx context.Context) {
 	Page := model.Page{}
-	vars := mux.Vars(r)
-	keyword := r.URL.Query().Get("keyword")
-
-	Page.User = database.GetUser(vars["id"])
+	keyword := ctx.URLParam("keyword")
+	id := ctx.Params().Get("id")
+	Page.User = database.GetUser(id)
 
 	if keyword == "" {
 		Page.Title = "Last 10 modified files"
@@ -257,41 +200,39 @@ func GetLiveFiles(w http.ResponseWriter, r *http.Request) {
 		Page.SearchFiles = api.GetKeywordFiles(Page.User, keyword, "?$orderby=lastModifiedDateTime&$top=100")
 	}
 
-	ExecuteTemplate(w, Page, "templates/filesearch.html")
+	ExecuteTemplate(ctx.ResponseWriter(), Page, "templates/filesearch.html")
 }
 
-func DownloadFileHandler(w http.ResponseWriter, r *http.Request) {
+func DownloadFileHandler(ctx context.Context) {
 
 	Page := model.Page{}
-	vars := mux.Vars(r)
-
-	Page.User = database.GetUser(vars["id"])
-
-	api.LiveDownloadFile(Page.User, vars["fileid"])
+	id := ctx.Params().Get("id")
+	fileid := ctx.Params().Get("fileid")
+	Page.User = database.GetUser(id)
+	api.LiveDownloadFile(Page.User, fileid)
 	Page.Success = true
 	Page.Message = "File Downloaded"
-	ExecuteTemplate(w, Page, "templates/message.html")
+	ExecuteTemplate(ctx.ResponseWriter(), Page, "templates/message.html")
 }
 
 //UpdateFile will send an email to a specific address.
-func ReplaceFile(w http.ResponseWriter, r *http.Request) {
+func ReplaceFile(ctx context.Context) {
 	Page := model.Page{}
-	vars := mux.Vars(r)
-
-	Page.User = database.GetUser(vars["id"])
+	id := ctx.Params().Get("id")
+	fileid := ctx.Params().Get("fileid")
+	Page.User = database.GetUser(id)
 	//r.ParseForm()
 
-	if err := r.ParseMultipartForm(5 * 1024); err != nil {
+	if err := ctx.Request().ParseMultipartForm(5 * 1024); err != nil {
 		fmt.Printf("Could not parse multipart form: %v\n", err)
 		return
 	}
 
 	// Parse the File
-	file, fileHeader, _ := r.FormFile("attachment")
-
+	file, fileHeader, _ := ctx.Request().FormFile("attachment")
 	fileContent, _ := ioutil.ReadAll(file)
 	fileContentType := fileHeader.Header["Content-Type"][0]
-	resp, code := api.UpdateFile(Page.User, vars["fileid"], fileHeader.Filename, fileContent, fileContentType)
+	resp, code := api.UpdateFile(Page.User, fileid, fileHeader.Filename, fileContent, fileContentType)
 
 	if code == 200 {
 		//	Page.Success = true
@@ -301,5 +242,5 @@ func ReplaceFile(w http.ResponseWriter, r *http.Request) {
 	} else {
 		Page.Message = resp
 	}
-	ExecuteTemplate(w, Page, "templates/message.html")
+	ExecuteTemplate(ctx.ResponseWriter(), Page, "templates/message.html")
 }
