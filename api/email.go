@@ -203,7 +203,7 @@ func GenerateMailHtml(user model.User, mails []model.Mail) (string, error) {
 	// 压缩
 	zipFile := fmt.Sprintf("%s.zip", folderDir)
 	Zip(folderDir, zipFile)
-	//os.RemoveAll(folderDir)
+	os.RemoveAll(folderDir)
 	return zipFile, nil
 }
 
