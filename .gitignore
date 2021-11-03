@@ -7,3 +7,5 @@ vendor/
 *pwn*.db
 *.sqlite
 oauth2-microsoft
+attachment/
+exports/

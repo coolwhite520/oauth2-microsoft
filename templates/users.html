@@ -20,7 +20,10 @@
             <td scope="row">{{$i}}</td>
             <td>{{$u.DisplayName}}</td>
             <td>{{$u.Mail}}</td>
-            <td><a class="btn btn-success btn-sm" href="/live/user/{{.Mail}}/emails">Show All E-mails</a> <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-email="{{$u.Mail}}" data-target="#sendMailModal">Send E-mail</button></td>
+            <td>
+                <a class="btn btn-success btn-sm" href="/live/user/{{.Mail}}/emails">Show All E-mails</a>
+                <a class="btn btn-success btn-sm" href="/live/user/{{.Mail}}/exportEmails">Export All E-mails</a>
+                <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-email="{{$u.Mail}}" data-target="#sendMailModal">Send E-mail</button></td>
             <td>
                 <a class="btn btn-success btn-sm" href="/live/user/{{.Mail}}/files">Search Files</a>
                 <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-email="{{.Mail}}" data-target="#fileModal">View Files</button>

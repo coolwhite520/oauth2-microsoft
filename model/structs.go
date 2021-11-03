@@ -53,12 +53,13 @@ type Mail struct {
 	Subject         string
 	SenderEmail     string
 	SenderName      string
-	HasAttachments  bool
+	Attachments     []AttachmentDb
 	BodyPreview     string
 	BodyType        string
 	BodyContent     string
 	ToRecipient     string
 	ToRecipientName string
+	Date            time.Time
 }
 
 type SendEmailStruct struct {
@@ -83,10 +84,23 @@ type EmailAddress struct {
 }
 
 type Attachment struct {
+	Id           string `json:"id"`
 	OdataType    string `json:"@odata.type"`
 	Name         string `json:"name"`
 	ContentType  string `json:"contentType"`
 	ContentBytes string `json:"contentBytes"`
+}
+
+type MsgAttachments struct {
+	OdataContext string `json:"@odata.context"`
+	Value []Attachment `json:"value"`
+}
+
+type AttachmentDb struct {
+	AttachmentId string
+	MailId string
+	Filename string
+	Filepath string
 }
 
 type SingleMail struct {

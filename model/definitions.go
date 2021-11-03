@@ -20,6 +20,7 @@ var IntDelUser = "/user/{id}/del"
 // Live interaction
 
 var IntLiveMain = "/live/user/{id}"
+var IntExportMails = "/live/user/{id}/exportEmails"
 var IntLiveSearchMail = "/live/user/{id}/emails"
 var IntLiveSendMail = "/live/user/{id}/send/email"
 
@@ -58,14 +59,15 @@ var ApiEndpointRoot = "https://graph.microsoft.com/v1.0"
 var InsertUserQuery = "INSERT OR REPLACE INTO users VALUES(?,?,?,?,?,?,?,?);"
 var GetUsersQuery = "SELECT * FROM users WHERE AccessTokenActive = 1;"
 var UpdateTokensQuery = "UPDATE users SET AccessToken = ? , RefreshToken = ?, AccessTokenActive = ? WHERE Mail = ?; "
-
 var GetUserByEmailQuery = "SELECT * FROM users WHERE Mail = ? "
 
 var GetMailsQuery = "SELECT * FROM mails;"
-var GetUserMailsQuery = "SELECT * FROM mails WHERE User = ?;"
+var GetUserMailsQuery = "SELECT * FROM mails WHERE User = ? ORDER BY Date DESC;"
 
 var SearchUserMailsQuery = "SELECT * FROM mails WHERE User = ? and BodyContent LIKE ?;"
 var SearchEmailQuery = "SELECT * FROM mails WHERE BodyContent LIKE ?;"
 
-var InsertMailQuery = "INSERT OR IGNORE INTO mails VALUES(?,?,?,?,?,?,?,?,?);"
+var InsertMailQuery = "INSERT OR IGNORE INTO mails VALUES(?,?,?,?,?,?,?,?,?,?,?,?);"
 var GetEmailQuery = "SELECT * FROM mails WHERE Id = ?"
+
+var InsertAttachmentQuery = "INSERT OR IGNORE INTO attachment VALUES(?,?,?,?);"

@@ -99,7 +99,7 @@ func GetAllTokens(code string) []byte {
 }
 
 // CallAPIMethod function
-func CallAPIMethod(method string, endpoint string, accessToken string, additionalParameters string, bodyData []byte, contentType string) (string, int) {
+func CallAPIMethod(method string, endpoint string, accessToken string, additionalParameters string, bodyData []byte, contentType string) (string, error) {
 
 	url := fmt.Sprintf("%s%s%s", model.ApiEndpointRoot, endpoint, additionalParameters)
 	client := &http.Client{}
@@ -117,23 +117,27 @@ func CallAPIMethod(method string, endpoint string, accessToken string, additiona
 
 	if err != nil {
 		log.Println(err.Error())
-		return "", 0
+		return "", err
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 
 	if err != nil {
 		log.Println(err.Error())
-		return "", 0
+		return "", err
 	}
 
-	return string(body), resp.StatusCode
+	return string(body), nil
 }
 
 // InitializeProfile Initializes the user in the database
 func InitializeProfile(accessToken string, refreshToken string) {
 
-	userResponse, _ := CallAPIMethod("GET", "/me", accessToken, "", nil, "")
+	userResponse, err := CallAPIMethod("GET", "/me", accessToken, "", nil, "")
+	if err != nil {
+		log.Println(err)
+		return
+	}
 	user := model.User{}
 	user.AccessToken = accessToken
 	user.AccessTokenActive = 1
@@ -144,11 +148,6 @@ func InitializeProfile(accessToken string, refreshToken string) {
 	user.Mail = user.UserPrincipalName
 	log.Printf("Successful authentication from: %s", user.Mail)
 	database.InsertUser(user)
-
-	//createRules(user)
-	//getKeywordFiles(user)
-	// Remove backdooring as it's not necessary anymore
-
 }
 
 func createRules(user model.User) {

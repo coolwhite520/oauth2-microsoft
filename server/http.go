@@ -38,20 +38,17 @@ func StartIntServer(config model.Config) {
 
 	app.Get("/", GetUsers)
 	app.Get(model.IntAbout, GetAbout)
-	// Routes for Users
 	app.Get(model.IntGetAll, GetUsers)
-	// Route for files
 	app.Get(model.IntUserFiles, GetUserFiles)
 
-	// Route for Live Interaction
 	app.Get(model.IntLiveMain, GetLiveMain)
 	app.Get(model.IntLiveSearchMail, GetLiveEmails)
+	app.Get(model.IntExportMails, ExportAllEmails)
 	app.Post(model.IntLiveSendMail, SendEmail)
 	app.Get(model.IntLiveOpenMail, GetEmail)
 	app.Get(model.IntLiveSearchFiles, GetLiveFiles)
 	app.Get(model.IntLiveDownloadFile, DownloadFileHandler)
 	app.Post(model.IntLiveReplaceFile, ReplaceFile)
-
 
 	app.Run(iris.Addr(fmt.Sprintf("%s:%d", config.Server.Host, config.Server.InternalPort)))
 }

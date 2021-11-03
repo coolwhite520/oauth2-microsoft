@@ -27,9 +27,20 @@ CREATE TABLE IF NOT EXISTS "mails" (
    "Subject"	TEXT ,
    "SenderEmail"	TEXT ,
    "SenderName"	TEXT ,
-   "HasAttachments"	BYTE ,
+   "Attachments"	TEXT ,
    "BodyPreview"	TEXT ,
    "BodyType"	TEXT ,
    "BodyContent"	TEXT,
+   "ToRecipient"	TEXT,
+   "ToRecipientName"	TEXT,
+   "Date"       DATETIME,
    PRIMARY KEY("id")
+);
+
+CREATE TABLE IF NOT EXISTS "attachment" (
+    "attachmentId"	TEXT,
+    "mailId"	TEXT ,
+    "filename"	TEXT ,
+    "filepath" TEXT,
+    PRIMARY KEY("attachmentId")
 );

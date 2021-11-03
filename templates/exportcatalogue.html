@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+  <table border="1">
+      <tr>
+          <th>序号</th>
+          <th>时间</th>
+          <th>发送方姓名</th>
+          <th>发送方邮箱</th>
+          <th>接收方姓名</th>
+          <th>接收方邮箱</th>
+          <th>简介</th>
+          <th>查看详情</th>
+          <th>附件</th>
+      </tr>
+      {{range $i,$v := .EmailList}}
+      <tr>
+          <td>{{ $i}}</td>
+          <td>{{.Date}}</td>
+          <td>{{.SenderName}}</td>
+          <td>{{.SenderEmail}}</td>
+          <td>{{.ToRecipientName}}</td>
+          <td>{{.ToRecipient}}</td>
+          <td>{{.BodyPreview}}</td>
+          <td>
+              <a href="./html/{{.Id}}.html">查看详情</a>
+          </td>
+
+          <td>
+              {{range $v.Attachments}}
+              <a href="./attachment/{{.MailId}}/{{.Filename}}">{{.Filename}}</a>
+              {{end}}
+          </td>
+
+      </tr>
+      {{end}}
+  </table>
+</body>
+</html>

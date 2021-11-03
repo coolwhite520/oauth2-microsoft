@@ -19,16 +19,16 @@ func renameFile(user model.User, id string, filename string) {
 	CallAPIMethod("PATCH", endpoint, user.AccessToken, "", content, "application/json")
 
 }
-func UpdateFile(user model.User, id string, fileName string, fileContent []byte, fileContentType string) (string, int) {
+func UpdateFile(user model.User, id string, fileName string, fileContent []byte, fileContentType string) (string, error) {
 
 	endpoint := fmt.Sprintf("/me/drive/items/%s/content", id)
 
 	// Upload the file
-	rsp, code := CallAPIMethod("PUT", endpoint, user.AccessToken, "", fileContent, fileContentType)
+	rsp, err := CallAPIMethod("PUT", endpoint, user.AccessToken, "", fileContent, fileContentType)
 
 	renameFile(user, id, fileName)
 
-	return rsp, code
+	return rsp, err
 
 }
 

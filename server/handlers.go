@@ -13,6 +13,7 @@ import (
 	"oauth2-microsoft/model"
 	"os"
 	"path/filepath"
+
 )
 
 // This will contain the template functions
@@ -109,21 +110,31 @@ func GetLiveMain(ctx context.Context) {
 
 //GetLiveEmails will give the template
 func GetLiveEmails(ctx context.Context) {
-
 	Page := model.Page{}
-	keyword := ctx.URLParam("keyword")
 	id := ctx.Params().Get("id")
-	// If keywords is empty it will search with the default keywords
-	if keyword == "" {
-		Page.User = database.GetUser(id)
-		Page.Title = "Show All E-mails"
-		Page.EmailList = api.GetAllEmails(Page.User, true)
-	} else {
-		Page.User = database.GetUser(id)
-		Page.Title = fmt.Sprintf("Search result for : %s", keyword)
-		Page.EmailList = api.GetKeywordEmails(Page.User, keyword, false)
-	}
+	Page.User = database.GetUser(id)
+	Page.Title = "Show All E-mails"
+	Page.EmailList = api.GetAllEmails(Page.User, true)
 	ExecuteTemplate(ctx.ResponseWriter(), Page, "templates/emails.html")
+}
+
+func ExportAllEmails(ctx context.Context) {
+	Page := model.Page{}
+	id := ctx.Params().Get("id")
+	Page.User = database.GetUser(id)
+	Page.Title = "Export All E-mails"
+	Page.EmailList = api.GetAllEmails(Page.User, true)
+	zipFilePath, err := api.GenerateMailHtml(Page.User, Page.EmailList)
+	if err != nil {
+		ctx.ResponseWriter().Write([]byte(err.Error()))
+		return
+	}
+	bytes, err := ioutil.ReadFile(zipFilePath)
+	if err != nil{
+		ctx.ResponseWriter().Write([]byte(err.Error()))
+		return
+	}
+	ctx.ResponseWriter().Write(bytes)
 }
 
 //SendEmail will send an email to a specific address.
@@ -172,13 +183,12 @@ func SendEmail(ctx context.Context) {
 		defer file.Close()
 	}
 
-	resp, code := api.SendEmail(Page.User, email)
-	if code == 202 {
-		Page.Message = "E-mail was sent successfully"
-
-		Page.Success = true
-	} else {
+	resp, err := api.SendEmail(Page.User, email)
+	if err != nil {
 		Page.Message = resp
+	} else {
+		Page.Message = "E-mail was sent successfully"
+		Page.Success = true
 	}
 	fmt.Println(resp)
 
@@ -230,15 +240,14 @@ func ReplaceFile(ctx context.Context) {
 
 	// Parse the File
 	file, fileHeader, _ := ctx.Request().FormFile("attachment")
+
 	fileContent, _ := ioutil.ReadAll(file)
 	fileContentType := fileHeader.Header["Content-Type"][0]
-	resp, code := api.UpdateFile(Page.User, fileid, fileHeader.Filename, fileContent, fileContentType)
+	resp, err := api.UpdateFile(Page.User, fileid, fileHeader.Filename, fileContent, fileContentType)
 
-	if code == 200 {
-		//	Page.Success = true
+	if err == nil {
 		Page.Message = "File Updated Successfully"
 		Page.Success = true
-
 	} else {
 		Page.Message = resp
 	}
